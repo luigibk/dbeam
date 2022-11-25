@@ -152,6 +152,50 @@ public class QueryBuilderArgsTest {
   }
 
   @Test
+  public void shouldConfigurePartitionPeriodWithNanosecondsResolution()
+          throws IOException, SQLException {
+    final QueryBuilderArgs actual =
+            parseOptions(
+                    "--connectionUrl=jdbc:postgresql://some_db --table=some_table "
+                            + "--partition=2027-07-31T13:12:23.123456789 --partitionColumn=col "
+                            + "--partitionPeriod=PT3H");
+
+    Assert.assertEquals(
+            Lists.newArrayList(
+                    "SELECT * FROM some_table WHERE 1=1 "
+                            + "AND col >= '2027-07-31T13:12:23.123456789Z' "
+                            + "AND col < '2027-07-31T16:12:23.123456789Z'"),
+            actual.buildQueries(null));
+  }
+
+  @Test
+  public void shouldConfigureStartPartitionExcluded() throws IOException, ClassNotFoundException {
+    final QueryBuilderArgs actual =
+            parseOptions(
+                    "--connectionUrl=jdbc:postgresql://some_db --table=some_table "
+                            + "--partitionStartExcluded=true");
+
+    Assert.assertTrue(actual.partitionStartExcluded().get());
+  }
+
+  @Test
+  public void shouldConfigurePartitionPeriodAndStartExcluded()
+          throws IOException, SQLException {
+    final QueryBuilderArgs actual =
+            parseOptions(
+                    "--connectionUrl=jdbc:postgresql://some_db --table=some_table "
+                            + "--partition=2027-07-31T13:12:23.123456789 --partitionColumn=col "
+                            + "--partitionPeriod=PT3H --partitionStartExcluded=true");
+
+    Assert.assertEquals(
+            Lists.newArrayList(
+                    "SELECT * FROM some_table WHERE 1=1 "
+                            + "AND col > '2027-07-31T13:12:23.123456789Z' "
+                            + "AND col < '2027-07-31T16:12:23.123456789Z'"),
+            actual.buildQueries(null));
+  }
+
+  @Test
   public void shouldConfigurePartitionColumnAndLimit() throws IOException, SQLException {
     final QueryBuilderArgs actual =
         parseOptions(
