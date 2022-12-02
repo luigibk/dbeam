@@ -210,7 +210,7 @@ public class JdbcAvroSchema {
       case TIME:
       case TIME_WITH_TIMEZONE:
         if (useLogicalTypes) {
-          return field.longBuilder().prop("logicalType", "timestamp-millis").endLong();
+          return field.longBuilder().prop("logicalType", "timestamp-micros").endLong();
         } else {
           return field.longType();
         }

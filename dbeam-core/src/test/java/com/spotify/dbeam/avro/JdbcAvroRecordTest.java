@@ -33,7 +33,10 @@ import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -62,7 +65,7 @@ public class JdbcAvroRecordTest {
 
   @Test
   public void shouldCreateSchema() throws ClassNotFoundException, SQLException {
-    final int fieldCount = 12;
+    final int fieldCount = 13;
     final Schema actual =
         JdbcAvroSchema.createSchemaByReadingOneRow(
             DbTestHelper.createConnection(CONNECTION_URL),
@@ -91,6 +94,7 @@ public class JdbcAvroRecordTest {
             "TOTAL",
             "CREATED",
             "UPDATED",
+            "BEST_TIME",
             "UID",
             "ROWNUM"),
         actual.getFields().stream().map(Schema.Field::name).collect(Collectors.toList()));
@@ -128,7 +132,7 @@ public class JdbcAvroRecordTest {
 
   @Test
   public void shouldCreateSchemaWithLogicalTypes() throws ClassNotFoundException, SQLException {
-    final int fieldCount = 12;
+    final int fieldCount = 13;
     final Schema actual =
         JdbcAvroSchema.createSchemaByReadingOneRow(
             DbTestHelper.createConnection(CONNECTION_URL),
@@ -140,7 +144,7 @@ public class JdbcAvroRecordTest {
 
     Assert.assertEquals(fieldCount, actual.getFields().size());
     Assert.assertEquals(
-        "timestamp-millis",
+        "timestamp-micros",
         actual.getField("UPDATED").schema().getTypes().get(1).getProp("logicalType"));
   }
 
@@ -188,29 +192,68 @@ public class JdbcAvroRecordTest {
         StreamSupport.stream(dataFileReader.spliterator(), false).collect(Collectors.toList());
 
     Assert.assertEquals(2, records.size());
-    final GenericRecord record =
+    final GenericRecord record_1 =
         records.stream()
             .filter(r -> Coffee.COFFEE1.name().equals(r.get(0).toString()))
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("not found"));
 
-    Assert.assertEquals(12, record.getSchema().getFields().size());
-    Assert.assertEquals(schema, record.getSchema());
-    final Coffee actual =
+    Assert.assertEquals(13, record_1.getSchema().getFields().size());
+    Assert.assertEquals(schema, record_1.getSchema());
+    Long createdAtMicros = (Long) record_1.get(8);
+    final Coffee actual_1 =
         Coffee.create(
-            record.get(0).toString(),
-            Optional.ofNullable((Integer) record.get(1)),
-            new java.math.BigDecimal(record.get(2).toString()),
-            (Float) record.get(3),
-            (Double) record.get(4),
-            (Boolean) record.get(5),
-            (Integer) record.get(6),
-            (Long) record.get(7),
-            new java.sql.Timestamp((Long) record.get(8)),
-            Optional.ofNullable((Long) record.get(9)).map(Timestamp::new),
-            TestHelper.byteBufferToUuid((ByteBuffer) record.get(10)),
-            (Long) record.get(11));
-    Assert.assertEquals(Coffee.COFFEE1, actual);
+            record_1.get(0).toString(),
+            Optional.ofNullable((Integer) record_1.get(1)),
+            new java.math.BigDecimal(record_1.get(2).toString()),
+            (Float) record_1.get(3),
+            (Double) record_1.get(4),
+            (Boolean) record_1.get(5),
+            (Integer) record_1.get(6),
+            (Long) record_1.get(7),
+            LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(
+        createdAtMicros / 1_000_000, (createdAtMicros % 1_000_000) * 1_000
+                ), ZoneId.of("UTC")
+            ),
+            Optional.ofNullable((Long) record_1.get(9))
+                    .map(r -> Instant.ofEpochSecond(r / 1_000_000, (r % 1_000_000) * 1_000))
+                    .map(i -> LocalDateTime.ofInstant(i, ZoneId.of("UTC"))),
+            LocalTime.ofNanoOfDay(((Long) record_1.get(10)) * 1_000),
+            TestHelper.byteBufferToUuid((ByteBuffer) record_1.get(11)),
+            (Long) record_1.get(12));
+    Assert.assertEquals(Coffee.COFFEE1, actual_1);
+
+    final GenericRecord record_2 =
+        records.stream()
+            .filter(r -> Coffee.COFFEE2.name().equals(r.get(0).toString()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("not found"));
+    Assert.assertEquals(13, record_2.getSchema().getFields().size());
+    Assert.assertEquals(schema, record_2.getSchema());
+    createdAtMicros = (Long) record_2.get(8);
+    final Coffee actual_2 =
+        Coffee.create(
+            record_2.get(0).toString(),
+            Optional.ofNullable((Integer) record_2.get(1)),
+            new java.math.BigDecimal(record_2.get(2).toString()),
+            (Float) record_2.get(3),
+            (Double) record_2.get(4),
+            (Boolean) record_2.get(5),
+            (Integer) record_2.get(6),
+            (Long) record_2.get(7),
+            LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(
+            createdAtMicros / 1_000_000, (createdAtMicros % 1_000_000) * 1_000
+                ), ZoneId.of("UTC")
+            ),
+            Optional.ofNullable((Long) record_2.get(9))
+                .map(r -> Instant.ofEpochSecond(r / 1_000_000, (r % 1_000_000) * 1_000))
+                .map(i -> LocalDateTime.ofInstant(i, ZoneId.of("UTC"))),
+            LocalTime.ofNanoOfDay(((Long) record_2.get(10)) * 1_000),
+            TestHelper.byteBufferToUuid((ByteBuffer) record_2.get(11)),
+            (Long) record_2.get(12));
+    Assert.assertEquals(Coffee.COFFEE2, actual_2);
   }
 
   @Test

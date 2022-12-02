@@ -40,6 +40,7 @@ import static java.sql.Types.REAL;
 import static java.sql.Types.SMALLINT;
 import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static java.sql.Types.TIME_WITH_TIMEZONE;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARBINARY;
@@ -50,6 +51,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
@@ -70,6 +74,15 @@ public class JdbcAvroRecord {
     } else {
       return null;
     }
+  }
+
+  private static Long instantToMicro(Instant instant) {
+    if (instant == null) {
+      return null;
+    }
+    long seconds = instant.getEpochSecond();
+    long micro = instant.getNano() / 1000;
+    return seconds * 1_000_000 + micro;
   }
 
   static SqlFunction<ResultSet, Object> computeMapping(
@@ -93,13 +106,30 @@ public class JdbcAvroRecord {
         }
         return resultSet -> resultSet.getInt(column);
       case TIMESTAMP:
-      case DATE:
+      case TIMESTAMP_WITH_TIMEZONE:
+        return resultSet -> {
+          final OffsetDateTime timestamp = resultSet.getObject(column, OffsetDateTime.class);
+          if (timestamp != null) {
+            return instantToMicro(timestamp.toInstant());
+          } else {
+            return null;
+          }
+        };
       case TIME:
+        return resultSet -> {
+          final LocalTime time = resultSet.getObject(column, LocalTime.class);
+          if (time != null) {
+            return time.toNanoOfDay() / 1_000;
+          } else {
+            return null;
+          }
+        };
+      case DATE:
       case TIME_WITH_TIMEZONE:
         return resultSet -> {
           final Timestamp timestamp = resultSet.getTimestamp(column, CALENDAR);
           if (timestamp != null) {
-            return timestamp.getTime();
+            return timestamp.getTime() * 1_000;
           } else {
             return null;
           }

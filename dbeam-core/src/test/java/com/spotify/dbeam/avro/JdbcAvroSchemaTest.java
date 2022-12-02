@@ -80,7 +80,7 @@ public class JdbcAvroSchemaTest {
     final Schema fieldSchema = createAvroSchemaForSingleField(resultSet, true);
 
     Assert.assertEquals(Schema.Type.LONG, fieldSchema.getType());
-    Assert.assertEquals("timestamp-millis", fieldSchema.getProp("logicalType"));
+    Assert.assertEquals("timestamp-micros", fieldSchema.getProp("logicalType"));
   }
 
   @Test

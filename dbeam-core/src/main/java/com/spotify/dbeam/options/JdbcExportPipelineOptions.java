@@ -33,7 +33,9 @@ public interface JdbcExportPipelineOptions extends DBeamPipelineOptions {
   void setPartition(String value);
 
   @Default.Boolean(false)
-  @Description("Is the partition start excluded (i.e. select ... where partitionColumn > instead of >=).")
+  @Description(
+      "Is the partition start excluded "
+          + "(i.e. select ... where partitionColumn > instead of >=).")
   Boolean isPartitionStartExcluded();
 
   void setPartitionStartExcluded(Boolean value);

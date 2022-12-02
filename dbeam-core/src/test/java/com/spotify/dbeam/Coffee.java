@@ -22,6 +22,10 @@ package com.spotify.dbeam;
 
 import com.google.auto.value.AutoValue;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,8 +43,9 @@ public abstract class Coffee {
       final Boolean isArabic,
       final Integer sales,
       final Long total,
-      final java.sql.Timestamp created,
-      final Optional<java.sql.Timestamp> updated,
+      final LocalDateTime created,
+      final Optional<LocalDateTime> updated,
+      final LocalTime bestTime,
       final UUID uid,
       final Long rownum) {
     return new AutoValue_Coffee(
@@ -54,6 +59,7 @@ public abstract class Coffee {
         total,
         created,
         updated,
+        bestTime,
         uid,
         rownum);
   }
@@ -74,9 +80,11 @@ public abstract class Coffee {
 
   public abstract Long total();
 
-  public abstract java.sql.Timestamp created();
+  public abstract java.time.LocalDateTime created();
 
-  public abstract Optional<java.sql.Timestamp> updated();
+  public abstract Optional<java.time.LocalDateTime> updated();
+
+  public abstract java.time.LocalTime bestTime();
 
   public abstract UUID uid();
 
@@ -85,7 +93,8 @@ public abstract class Coffee {
   public String insertStatement() {
     return String.format(
         Locale.ENGLISH,
-        "INSERT INTO COFFEES " + "VALUES ('%s', %s, '%s', %f, %f, %b, %d, %d, '%s', %s, '%s', %d)",
+        "INSERT INTO COFFEES "
+               + "VALUES ('%s', %s, '%s', %f, %f, %b, %d, %d, '%s', %s, '%s', '%s', %d)",
         name(),
         supId().orElse(null),
         price().toString(),
@@ -94,8 +103,9 @@ public abstract class Coffee {
         isArabic(),
         sales(),
         total(),
-        created(),
+        created().format(DateTimeFormatter.ISO_DATE_TIME),
         updated().orElse(null),
+        bestTime().format(DateTimeFormatter.ISO_TIME),
         uid(),
         rownum());
   }
@@ -113,6 +123,7 @@ public abstract class Coffee {
         + "\"TOTAL\" BIGINT DEFAULT 0 NOT NULL,"
         + "\"CREATED\" TIMESTAMP NOT NULL,"
         + "\"UPDATED\" TIMESTAMP,"
+        + "\"BEST_TIME\" TIME(6) NOT NULL,"
         + "\"UID\" UUID NOT NULL,"
         + "\"ROWNUM\" BIGINT NOT NULL);";
   }
@@ -127,8 +138,9 @@ public abstract class Coffee {
           true,
           17,
           200L,
-          new java.sql.Timestamp(1488300933000L),
+          LocalDateTime.ofEpochSecond(1488300933, 0, ZoneOffset.UTC),
           Optional.empty(),
+          LocalTime.of(13, 12, 11, 123456000),
           UUID.fromString("123e4567-e89b-12d3-a456-426655440000"),
           1L);
   public static Coffee COFFEE2 =
@@ -141,8 +153,9 @@ public abstract class Coffee {
           true,
           13,
           201L,
-          new java.sql.Timestamp(1488300723000L),
+          LocalDateTime.ofEpochSecond(1488300723, 123456000, ZoneOffset.UTC),
           Optional.empty(),
+          LocalTime.of(11, 12, 13, 0),
           UUID.fromString("123e4567-e89b-a456-12d3-426655440000"),
           2L);
 }
