@@ -47,12 +47,13 @@ public class JdbcExportArgsFactory {
   private static DateTimeFormatter INSTANT_PARSER_WITH_ZONE =
       new DateTimeFormatterBuilder()
           .parseCaseInsensitive()
-          .appendPattern("yyyy[-MM][-dd['T'HH[:mm[:ss]]]]")
+          .appendPattern("yyyy[-MM][-dd['T'HH[:mm[:ss[.SSSSSSSSS]]]]]")
           .parseDefaulting(ChronoField.MONTH_OF_YEAR, 1)
           .parseDefaulting(ChronoField.DAY_OF_MONTH, 1)
           .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
           .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
           .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+          .parseDefaulting(ChronoField.NANO_OF_SECOND, 0)
           .optionalStart() // optionally support offset id
           .appendOffsetId()
           .toFormatter()
@@ -123,6 +124,7 @@ public class JdbcExportArgsFactory {
         .setLimit(Optional.ofNullable(options.getLimit()))
         .setPartitionColumn(partitionColumn)
         .setPartition(partition)
+        .setPartitionStartExcluded(options.isPartitionStartExcluded())
         .setPartitionPeriod(partitionPeriod)
         .setSplitColumn(splitColumn)
         .setQueryParallelism(queryParallelism)

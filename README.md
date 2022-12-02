@@ -123,6 +123,9 @@ com.spotify.dbeam.options.JdbcExportPipelineOptions:
   --useAvroLogicalTypes=<Boolean>
     Default: false
     Controls whether generated Avro schema will contain logicalTypes or not.
+  --partitionStartExcluded=<Boolean>
+    Default: false
+    Is the partition start excluded (i.e. select ... where partitionColumn > instead of >=).
 ```
 
 #### Input Avro schema file

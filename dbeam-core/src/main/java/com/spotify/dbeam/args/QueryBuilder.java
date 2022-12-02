@@ -140,22 +140,30 @@ class QueryBuilder implements Serializable {
   }
 
   public QueryBuilder withPartitionCondition(
-      final String partitionColumn, final String startPointIncl, final String endPointExcl) {
+      final String partitionColumn,
+      final boolean isStartPointExcl,
+      final String startPoint,
+      final String endPointExcl) {
     return new QueryBuilder(
         this.base,
         Stream.concat(
                 this.whereConditions.stream(),
                 Stream.of(
-                    createSqlPartitionCondition(partitionColumn, startPointIncl, endPointExcl)))
+                    createSqlPartitionCondition(
+                            partitionColumn, isStartPointExcl, startPoint, endPointExcl)))
             .collect(Collectors.toList()),
         this.limitStr);
   }
 
   private static String createSqlPartitionCondition(
-      final String partitionColumn, final String startPointIncl, final String endPointExcl) {
+      final String partitionColumn,
+      final boolean isStartPointExcl,
+      final String startPoint,
+      final String endPointExcl) {
+    String lowerBoundOperation = isStartPointExcl ? ">" : ">=";
     return String.format(
-        " AND %s >= '%s' AND %s < '%s'",
-        partitionColumn, startPointIncl, partitionColumn, endPointExcl);
+        " AND %s %s '%s' AND %s < '%s'",
+        partitionColumn, lowerBoundOperation, startPoint, partitionColumn, endPointExcl);
   }
 
   public QueryBuilder withParallelizationCondition(

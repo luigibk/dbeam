@@ -48,7 +48,7 @@ public class QueryBuilderTest {
   @Test
   public void testCtorCopyWithConditionNotEquals() {
     final QueryBuilder q1 = QueryBuilder.fromSqlQuery("SELECT * FROM t1");
-    final QueryBuilder copy = q1.withPartitionCondition("pary", "20180101", "20180201");
+    final QueryBuilder copy = q1.withPartitionCondition("pary", false, "20180101", "20180201");
 
     Assert.assertNotEquals(q1.build(), copy.build());
   }
@@ -98,11 +98,24 @@ public class QueryBuilderTest {
   public void testRawSqlWithPartition() {
     final QueryBuilder wrapper =
         QueryBuilder.fromSqlQuery("SELECT * FROM t1")
-            .withPartitionCondition("birthDate", "2018-01-01", "2018-02-01");
+            .withPartitionCondition("birthDate", false, "2018-01-01", "2018-02-01");
 
     final String expected =
         "SELECT * FROM (SELECT * FROM t1) as user_sql_query WHERE 1=1"
             + " AND birthDate >= '2018-01-01' AND birthDate < '2018-02-01'";
+
+    Assert.assertEquals(expected, wrapper.build());
+  }
+
+  @Test
+  public void testRawSqlWithPartitionAndStartExcluded() {
+    final QueryBuilder wrapper =
+            QueryBuilder.fromSqlQuery("SELECT * FROM t1")
+                    .withPartitionCondition("birthDate", true, "2018-01-01", "2018-02-01");
+
+    final String expected =
+            "SELECT * FROM (SELECT * FROM t1) as user_sql_query WHERE 1=1"
+                    + " AND birthDate > '2018-01-01' AND birthDate < '2018-02-01'";
 
     Assert.assertEquals(expected, wrapper.build());
   }
@@ -204,9 +217,25 @@ public class QueryBuilderTest {
 
     final String actual =
         QueryBuilder.fromSqlQuery(input)
-            .withPartitionCondition("partition", "a", "d")
+            .withPartitionCondition("partition", false, "a", "d")
             .generateQueryToGetLimitsOfSplitColumn("splitCol", "mixy", "maxy")
             .build();
+    Assert.assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testItGeneratesQueryForLimitsAndStartExcluded() {
+    final String input = "SELECT * FROM coffees WHERE size > 10";
+    final String expected =
+            "SELECT MIN(splitCol) as mixy, MAX(splitCol) as maxy "
+                    + "FROM (SELECT * FROM coffees WHERE size > 10) as user_sql_query"
+                    + " WHERE 1=1 AND partition > 'a' AND partition < 'd'";
+
+    final String actual =
+            QueryBuilder.fromSqlQuery(input)
+                    .withPartitionCondition("partition", true, "a", "d")
+                    .generateQueryToGetLimitsOfSplitColumn("splitCol", "mixy", "maxy")
+                    .build();
     Assert.assertEquals(expected, actual);
   }
 
